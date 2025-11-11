@@ -50,8 +50,12 @@ struct Cli {
     /// asciicast path/filename or URL
     input_filename_or_url: String,
 
-    /// GIF path/filename
+    /// Output path/filename
     output_filename: String,
+
+    /// Whether to write an animated GIF or snapshot PNGs at markers
+    #[clap(long, arg_enum, default_value_t = agg::OutputMode::default())]
+    mode: agg::OutputMode,
 
     /// Select frame rendering backend
     #[clap(long, arg_enum, default_value_t = agg::Renderer::default())]
@@ -190,13 +194,23 @@ fn main() -> Result<()> {
     };
 
     let input = BufReader::new(reader(&cli.input_filename_or_url)?);
-    let mut output = File::create(&cli.output_filename)?;
 
-    match agg::run(input, &mut output, config) {
-        Ok(ok) => Ok(ok),
-        Err(err) => {
-            std::fs::remove_file(cli.output_filename)?;
-            Err(err)
+    match cli.mode {
+        agg::OutputMode::AnimatedGif => {
+            let mut output = File::create(&cli.output_filename)?;
+
+            match agg::run(input, &mut output, config) {
+                Ok(()) => (),
+                Err(err) => {
+                    std::fs::remove_file(&cli.output_filename)?;
+                    return Err(err);
+                }
+            }
+        }
+        agg::OutputMode::SnapshotMarkers => {
+            agg::write_snapshots(input, &cli.output_filename, config)?;
         }
     }
+
+    Ok(())
 }

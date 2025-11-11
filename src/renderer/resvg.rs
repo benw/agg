@@ -3,6 +3,7 @@ use crate::theme::Theme;
 use imgref::ImgVec;
 use rgb::{FromSlice, RGBA8};
 use std::{fmt::Write, sync::Arc};
+use tiny_skia::Pixmap;
 
 pub struct ResvgRenderer<'a> {
     terminal_size: (usize, usize),
@@ -238,10 +239,19 @@ impl<'a> ResvgRenderer<'a> {
 
         svg.push_str("</text>");
     }
-}
 
-impl<'a> Renderer for ResvgRenderer<'a> {
-    fn render(&mut self, lines: Vec<avt::Line>, cursor: Option<(usize, usize)>) -> ImgVec<RGBA8> {
+    pub fn render_png(
+        &self,
+        filename: &str,
+        lines: Vec<avt::Line>,
+        cursor: Option<(usize, usize)>,
+    ) -> anyhow::Result<()> {
+        let pixmap = self.render_pixmap(lines, cursor);
+        pixmap.save_png(filename)?;
+        Ok(())
+    }
+
+    fn render_pixmap(&self, lines: Vec<avt::Line>, cursor: Option<(usize, usize)>) -> Pixmap {
         let mut svg = self.header.clone();
         self.push_lines(&mut svg, lines, cursor);
         svg.push_str(Self::footer());
@@ -251,6 +261,13 @@ impl<'a> Renderer for ResvgRenderer<'a> {
             tiny_skia::Pixmap::new(self.pixel_width as u32, self.pixel_height as u32).unwrap();
 
         resvg::render(&tree, self.transform, &mut pixmap.as_mut());
+        pixmap
+    }
+}
+
+impl<'a> Renderer for ResvgRenderer<'a> {
+    fn render(&mut self, lines: Vec<avt::Line>, cursor: Option<(usize, usize)>) -> ImgVec<RGBA8> {
+        let pixmap = self.render_pixmap(lines, cursor);
         let buf = pixmap.take().as_rgba().to_vec();
 
         ImgVec::new(buf, self.pixel_width, self.pixel_height)

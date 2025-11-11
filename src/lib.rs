@@ -5,6 +5,7 @@ mod renderer;
 mod theme;
 mod vt;
 
+use std::collections::HashMap;
 use std::fmt::{Debug, Display};
 use std::io::{BufRead, Write};
 use std::{iter, thread, time::Instant};
@@ -14,6 +15,7 @@ use clap::ArgEnum;
 use log::info;
 
 use crate::asciicast::{Asciicast, Event, Header};
+use crate::renderer::Renderer as _;
 
 pub const DEFAULT_FONT_FAMILY: &str =
     "JetBrains Mono,Fira Code,SF Mono,Menlo,Consolas,DejaVu Sans Mono,Liberation Mono";
@@ -68,6 +70,16 @@ pub enum Renderer {
     #[default]
     Resvg,
     Fontdue,
+}
+
+#[derive(Clone, Debug, ArgEnum, Default)]
+pub enum OutputMode {
+    /// Write a single animated GIF of the entire input
+    #[default]
+    AnimatedGif,
+
+    /// Write a snapshot PNG of each marker in the input
+    SnapshotMarkers,
 }
 
 #[derive(Clone, Debug, ArgEnum, Default)]
@@ -248,5 +260,47 @@ pub fn run<I: BufRead, O: Write + Send>(input: I, output: O, config: Config) -> 
         start_time.elapsed().as_secs_f32()
     );
 
+    Ok(())
+}
+
+pub fn write_snapshots<I: BufRead>(input: I, snapshots_path: &str, config: Config) -> Result<()> {
+    let Asciicast { header, events } = asciicast::open(input)?;
+    let settings = renderer_settings(&header, &config)?;
+    let terminal_size = settings.terminal_size;
+    let renderer = renderer::resvg(settings);
+
+    let (width, height) = renderer.pixel_size();
+
+    info!("snapshot dimensions: {}x{}", width, height);
+
+    let mut vt = avt::Vt::builder()
+        .size(terminal_size.0, terminal_size.1)
+        .scrollback_limit(0)
+        .build();
+
+    let mut label_counters: HashMap<String, u32> = HashMap::new();
+
+    for event in events {
+        match event? {
+            Event::Output(_time, data) => {
+                vt.feed_str(&data);
+            }
+            Event::Marker(_time, label) => {
+                let counter = label_counters.entry(label.clone()).or_insert(0);
+                let name = if label.is_empty() { "marker" } else { &label };
+                let filename = if *counter == 0 {
+                    format!("{snapshots_path}/{name}.png")
+                } else {
+                    format!("{snapshots_path}/{name} {counter}.png")
+                };
+                *counter += 1;
+
+                let lines = vt.view().to_vec();
+                let cursor: Option<(usize, usize)> = vt.cursor().into();
+                info!("rendering {}", filename);
+                renderer.render_png(&filename, lines, cursor)?;
+            }
+        }
+    }
     Ok(())
 }
