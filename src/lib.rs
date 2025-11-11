@@ -145,24 +145,6 @@ pub fn run<I: BufRead, O: Write + Send>(input: I, output: O, config: Config) -> 
         config.rows.unwrap_or(header.term_rows as usize),
     );
 
-    let itl = config
-        .idle_time_limit
-        .or(header.idle_time_limit)
-        .unwrap_or(DEFAULT_IDLE_TIME_LIMIT);
-
-    let events = events.into_iter().filter_map(|event| match event {
-        Ok(Event::Output(time, data)) => Some(Ok((time, data))),
-        Ok(Event::Marker(..)) => None,
-        Err(e) => Some(Err(e)),
-    });
-    let events = iter::once(Ok((0.0, "".to_owned()))).chain(events);
-    let events = events::limit_idle_time(events, itl);
-    let events = events::accelerate(events, config.speed);
-    let events = events::batch(events, config.fps_cap);
-    let events = events.collect::<Vec<_>>();
-    let count = events.len() as u64;
-    let frames = vt::frames(events.into_iter(), terminal_size);
-
     info!("terminal size: {}x{}", terminal_size.0, terminal_size.1);
 
     let (font_db, font_families) = fonts::init(&config.font_dirs, &config.font_family)
@@ -194,6 +176,24 @@ pub fn run<I: BufRead, O: Write + Send>(input: I, output: O, config: Config) -> 
     let (width, height) = renderer.pixel_size();
 
     info!("gif dimensions: {}x{}", width, height);
+
+    let itl = config
+        .idle_time_limit
+        .or(header.idle_time_limit)
+        .unwrap_or(DEFAULT_IDLE_TIME_LIMIT);
+
+    let events = events.into_iter().filter_map(|event| match event {
+        Ok(Event::Output(time, data)) => Some(Ok((time, data))),
+        Ok(Event::Marker(..)) => None,
+        Err(e) => Some(Err(e)),
+    });
+    let events = iter::once(Ok((0.0, "".to_owned()))).chain(events);
+    let events = events::limit_idle_time(events, itl);
+    let events = events::accelerate(events, config.speed);
+    let events = events::batch(events, config.fps_cap);
+    let events = events.collect::<Vec<_>>();
+    let count = events.len() as u64;
+    let frames = vt::frames(events.into_iter(), terminal_size);
 
     let repeat = if config.no_loop {
         gifski::Repeat::Finite(0)
