@@ -295,6 +295,7 @@ pub fn write_snapshots<I: BufRead>(input: I, snapshots_path: &str, config: Confi
                 vt.feed_str(&data);
             }
             Event::Marker(_time, label) => {
+                let label = sanitize(&label);
                 let counter = label_counters.entry(label.clone()).or_insert(0);
                 let name = if label.is_empty() { "marker" } else { &label };
                 let filename = if *counter == 0 {
@@ -312,4 +313,10 @@ pub fn write_snapshots<I: BufRead>(input: I, snapshots_path: &str, config: Confi
         }
     }
     Ok(())
+}
+
+fn sanitize(s: &str) -> String {
+    s.chars()
+        .filter(|c| matches!(c, 'a'..='z' | 'A'..='Z' | '0'..='9' | '_' | '-' | ' ' | '.'))
+        .collect()
 }
