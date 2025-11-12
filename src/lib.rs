@@ -13,7 +13,7 @@ use anyhow::{anyhow, Result};
 use clap::ArgEnum;
 use log::info;
 
-use crate::asciicast::{Asciicast, Event};
+use crate::asciicast::{Asciicast, Event, Header};
 
 pub const DEFAULT_FONT_FAMILY: &str =
     "JetBrains Mono,Fira Code,SF Mono,Menlo,Consolas,DejaVu Sans Mono,Liberation Mono";
@@ -129,9 +129,7 @@ impl Display for Theme {
     }
 }
 
-pub fn run<I: BufRead, O: Write + Send>(input: I, output: O, config: Config) -> Result<()> {
-    let Asciicast { header, events, .. } = asciicast::open(input)?;
-
+fn renderer_settings(header: &Header, config: &Config) -> Result<renderer::Settings> {
     if header.term_cols == 0 || header.term_rows == 0 {
         return Err(anyhow!(
             "the recording has invalid terminal size: {}x{}",
@@ -154,7 +152,8 @@ pub fn run<I: BufRead, O: Write + Send>(input: I, output: O, config: Config) -> 
 
     let theme_opt = config
         .theme
-        .or_else(|| header.term_theme.map(Theme::Embedded))
+        .clone()
+        .or_else(|| header.term_theme.clone().map(Theme::Embedded))
         .unwrap_or(Theme::Dracula);
 
     info!("selected theme: {}", theme_opt);
@@ -167,7 +166,13 @@ pub fn run<I: BufRead, O: Write + Send>(input: I, output: O, config: Config) -> 
         line_height: config.line_height,
         theme: theme_opt.try_into()?,
     };
+    Ok(settings)
+}
 
+pub fn run<I: BufRead, O: Write + Send>(input: I, output: O, config: Config) -> Result<()> {
+    let Asciicast { header, events } = asciicast::open(input)?;
+    let settings = renderer_settings(&header, &config)?;
+    let terminal_size = settings.terminal_size;
     let mut renderer: Box<dyn renderer::Renderer> = match config.renderer {
         Renderer::Fontdue => Box::new(renderer::fontdue(settings)),
         Renderer::Resvg => Box::new(renderer::resvg(settings)),
