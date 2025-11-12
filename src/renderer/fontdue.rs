@@ -178,7 +178,7 @@ fn mix_colors(fg: RGBA8, bg: RGBA8, ratio: u8) -> RGBA8 {
 }
 
 impl Renderer for FontdueRenderer {
-    fn render(&mut self, lines: Vec<avt::Line>, cursor: Option<(usize, usize)>) -> ImgVec<RGBA8> {
+    fn render(&mut self, lines: &[avt::Line], cursor: Option<(usize, usize)>) -> ImgVec<RGBA8> {
         let mut buf: Vec<RGBA8> =
             vec![self.background_color; self.pixel_width * self.pixel_height];
 

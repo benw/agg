@@ -7,7 +7,7 @@ use rgb::{RGB8, RGBA8};
 use crate::theme::Theme;
 
 pub trait Renderer {
-    fn render(&mut self, lines: Vec<avt::Line>, cursor: Option<(usize, usize)>) -> ImgVec<RGBA8>;
+    fn render(&mut self, lines: &[avt::Line], cursor: Option<(usize, usize)>) -> ImgVec<RGBA8>;
     fn pixel_size(&self) -> (usize, usize);
 }
 

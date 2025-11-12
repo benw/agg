@@ -143,7 +143,7 @@ impl<'a> ResvgRenderer<'a> {
         "</svg></svg>"
     }
 
-    fn push_lines(&self, svg: &mut String, lines: Vec<avt::Line>, cursor: Option<(usize, usize)>) {
+    fn push_lines(&self, svg: &mut String, lines: &[avt::Line], cursor: Option<(usize, usize)>) {
         self.push_background(svg, &lines, cursor);
         self.push_text(svg, &lines, cursor);
     }
@@ -261,7 +261,7 @@ impl<'a> ResvgRenderer<'a> {
     pub fn render_png(
         &self,
         filename: &str,
-        lines: Vec<avt::Line>,
+        lines: &[avt::Line],
         cursor: Option<(usize, usize)>,
     ) -> anyhow::Result<()> {
         let pixmap = self.render_pixmap(lines, cursor);
@@ -269,7 +269,7 @@ impl<'a> ResvgRenderer<'a> {
         Ok(())
     }
 
-    fn render_pixmap(&self, lines: Vec<avt::Line>, cursor: Option<(usize, usize)>) -> Pixmap {
+    fn render_pixmap(&self, lines: &[avt::Line], cursor: Option<(usize, usize)>) -> Pixmap {
         let mut svg = self.header.clone();
         self.push_lines(&mut svg, lines, cursor);
         svg.push_str(Self::footer());
@@ -284,7 +284,7 @@ impl<'a> ResvgRenderer<'a> {
 }
 
 impl<'a> Renderer for ResvgRenderer<'a> {
-    fn render(&mut self, lines: Vec<avt::Line>, cursor: Option<(usize, usize)>) -> ImgVec<RGBA8> {
+    fn render(&mut self, lines: &[avt::Line], cursor: Option<(usize, usize)>) -> ImgVec<RGBA8> {
         let pixmap = self.render_pixmap(lines, cursor);
         let buf = pixmap.take().as_rgba().to_vec();
 

@@ -254,7 +254,7 @@ pub fn run<I: BufRead, O: Write + Send>(input: I, output: O, config: Config) -> 
 
         for (i, frame) in frames.enumerate() {
             let (time, lines, cursor) = frame?;
-            let image = renderer.render(lines, cursor);
+            let image = renderer.render(&lines, cursor);
             let time = if i == 0 { 0.0 } else { time };
             collector.add_frame_rgba(i, image, time + config.last_frame_duration)?;
         }
@@ -305,7 +305,7 @@ pub fn write_snapshots<I: BufRead>(input: I, snapshots_path: &str, config: Confi
                 };
                 *counter += 1;
 
-                let lines = vt.view().to_vec();
+                let lines = vt.view();
                 let cursor: Option<(usize, usize)> = vt.cursor().into();
                 info!("rendering {}", filename);
                 renderer.render_png(&filename, lines, cursor)?;
