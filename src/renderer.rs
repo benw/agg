@@ -18,6 +18,8 @@ pub struct Settings {
     pub font_size: usize,
     pub line_height: f64,
     pub theme: Theme,
+    pub pixel_width: Option<usize>,
+    pub pixel_height: Option<usize>,
 }
 
 pub fn resvg<'a>(settings: Settings) -> resvg::ResvgRenderer<'a> {

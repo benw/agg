@@ -78,8 +78,12 @@ impl FontdueRenderer {
             font_db: settings.font_db,
             font_families: settings.font_families,
             theme: settings.theme,
-            pixel_width: ((cols + 2) as f64 * col_width).round() as usize,
-            pixel_height: ((rows + 1) as f64 * row_height).round() as usize,
+            pixel_width: settings
+                .pixel_width
+                .unwrap_or(((cols + 2) as f64 * col_width).round() as usize),
+            pixel_height: settings
+                .pixel_height
+                .unwrap_or(((rows + 1) as f64 * row_height).round() as usize),
             font_size: settings.font_size,
             col_width,
             row_height,

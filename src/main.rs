@@ -116,6 +116,14 @@ struct Cli {
     /// Quiet mode - suppress diagnostic messages and progress bars
     #[clap(short, long)]
     quiet: bool,
+
+    /// Override output image width (in pixels)
+    #[clap(long)]
+    width: Option<usize>,
+
+    /// Override output image height (in pixels)
+    #[clap(long)]
+    height: Option<usize>,
 }
 
 fn download(url: &str) -> Result<impl io::Read> {
@@ -177,6 +185,8 @@ fn main() -> Result<()> {
         .init();
 
     let config = agg::Config {
+        width: cli.width,
+        height: cli.height,
         cols: cli.cols,
         font_dirs: cli.font_dir,
         font_family: cli.font_family,

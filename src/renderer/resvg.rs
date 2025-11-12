@@ -79,8 +79,10 @@ impl<'a> ResvgRenderer<'a> {
         let mut svg = header.clone();
         svg.push_str(Self::footer());
         let tree = usvg::Tree::from_str(&svg, &options).unwrap();
-        let pixel_width = tree.size().width() as usize;
-        let pixel_height = tree.size().height() as usize;
+        let pixel_width = settings.pixel_width.unwrap_or(tree.size().width() as usize);
+        let pixel_height = settings
+            .pixel_height
+            .unwrap_or(tree.size().height() as usize);
 
         Self {
             terminal_size: settings.terminal_size,

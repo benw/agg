@@ -28,6 +28,8 @@ pub const DEFAULT_SPEED: f64 = 1.0;
 pub const DEFAULT_IDLE_TIME_LIMIT: f64 = 5.0;
 
 pub struct Config {
+    pub width: Option<usize>,
+    pub height: Option<usize>,
     pub cols: Option<usize>,
     pub font_dirs: Vec<String>,
     pub font_family: String,
@@ -47,6 +49,8 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
+            width: None,
+            height: None,
             cols: None,
             font_dirs: vec![],
             font_family: String::from(DEFAULT_FONT_FAMILY),
@@ -177,6 +181,8 @@ fn renderer_settings(header: &Header, config: &Config) -> Result<renderer::Setti
         font_size: config.font_size,
         line_height: config.line_height,
         theme: theme_opt.try_into()?,
+        pixel_width: config.width,
+        pixel_height: config.height,
     };
     Ok(settings)
 }
