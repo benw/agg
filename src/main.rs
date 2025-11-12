@@ -124,6 +124,10 @@ struct Cli {
     /// Override output image height (in pixels)
     #[clap(long)]
     height: Option<usize>,
+
+    /// Disable filling images with the background color
+    #[clap(long)]
+    transparent_background: bool,
 }
 
 fn download(url: &str) -> Result<impl io::Read> {
@@ -201,6 +205,7 @@ fn main() -> Result<()> {
         speed: cli.speed,
         theme: cli.theme.map(|theme| theme.0),
         show_progress_bar: !cli.quiet,
+        fill_background: !cli.transparent_background,
     };
 
     let input = BufReader::new(reader(&cli.input_filename_or_url)?);

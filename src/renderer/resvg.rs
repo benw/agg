@@ -74,6 +74,7 @@ impl<'a> ResvgRenderer<'a> {
             font_size,
             row_height,
             &settings.theme,
+            settings.fill_background,
         );
 
         let mut svg = header.clone();
@@ -103,13 +104,14 @@ impl<'a> ResvgRenderer<'a> {
         font_size: f64,
         row_height: f64,
         theme: &Theme,
+        fill_background: bool,
     ) -> String {
         let width = (cols + 2) as f64 * (font_size * 0.6);
         let height = (rows + 1) as f64 * row_height;
         let x = 1.0 * 100.0 / (cols as f64 + 2.0);
         let y = 0.5 * 100.0 / (rows as f64 + 1.0);
 
-        format!(
+        let mut header = format!(
             r#"<?xml version="1.0"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="{}" height="{}" font-size="{}px" font-family="{}">
 <style>
@@ -117,10 +119,24 @@ impl<'a> ResvgRenderer<'a> {
 .it {{ font-style: italic }}
 .un {{ text-decoration: underline }}
 </style>
-<rect width="100%" height="100%" rx="{}" ry="{}" style="fill: {}" />
-<svg x="{:.3}%" y="{:.3}%" style="fill: {}">"#,
-            width, height, font_size, font_family, 4, 4, theme.background, x, y, theme.foreground
+"#,
+            width, height, font_size, font_family
+        );
+        if fill_background {
+            writeln!(
+                &mut header,
+                r#"<rect width="100%" height="100%" rx="{}" ry="{}" style="fill: {}" />"#,
+                4, 4, theme.background
+            )
+            .unwrap();
+        }
+        writeln!(
+            &mut header,
+            r#"<svg x="{:.3}%" y="{:.3}%" style="fill: {}">"#,
+            x, y, theme.foreground
         )
+        .unwrap();
+        header
     }
 
     fn footer() -> &'static str {

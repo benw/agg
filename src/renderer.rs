@@ -20,6 +20,7 @@ pub struct Settings {
     pub theme: Theme,
     pub pixel_width: Option<usize>,
     pub pixel_height: Option<usize>,
+    pub fill_background: bool,
 }
 
 pub fn resvg<'a>(settings: Settings) -> resvg::ResvgRenderer<'a> {

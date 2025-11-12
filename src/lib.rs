@@ -44,6 +44,7 @@ pub struct Config {
     pub speed: f64,
     pub theme: Option<Theme>,
     pub show_progress_bar: bool,
+    pub fill_background: bool,
 }
 
 impl Default for Config {
@@ -65,6 +66,7 @@ impl Default for Config {
             speed: DEFAULT_SPEED,
             theme: Default::default(),
             show_progress_bar: true,
+            fill_background: true,
         }
     }
 }
@@ -183,6 +185,7 @@ fn renderer_settings(header: &Header, config: &Config) -> Result<renderer::Setti
         theme: theme_opt.try_into()?,
         pixel_width: config.width,
         pixel_height: config.height,
+        fill_background: config.fill_background,
     };
     Ok(settings)
 }
