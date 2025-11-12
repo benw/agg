@@ -13,7 +13,7 @@ use anyhow::{anyhow, Result};
 use clap::ArgEnum;
 use log::info;
 
-use crate::asciicast::Asciicast;
+use crate::asciicast::{Asciicast, Event};
 
 pub const DEFAULT_FONT_FAMILY: &str =
     "JetBrains Mono,Fira Code,SF Mono,Menlo,Consolas,DejaVu Sans Mono,Liberation Mono";
@@ -150,6 +150,11 @@ pub fn run<I: BufRead, O: Write + Send>(input: I, output: O, config: Config) -> 
         .or(header.idle_time_limit)
         .unwrap_or(DEFAULT_IDLE_TIME_LIMIT);
 
+    let events = events.into_iter().filter_map(|event| match event {
+        Ok(Event::Output(time, data)) => Some(Ok((time, data))),
+        Ok(Event::Marker(..)) => None,
+        Err(e) => Some(Err(e)),
+    });
     let events = iter::once(Ok((0.0, "".to_owned()))).chain(events);
     let events = events::limit_idle_time(events, itl);
     let events = events::accelerate(events, config.speed);
