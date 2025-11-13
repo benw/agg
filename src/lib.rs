@@ -299,16 +299,17 @@ pub fn write_snapshots<I: BufRead>(input: I, snapshots_path: &str, config: Confi
                 let counter = label_counters.entry(label.clone()).or_insert(0);
                 let name = if label.is_empty() { "marker" } else { &label };
                 let filename = if *counter == 0 {
-                    format!("{snapshots_path}/{name}.png")
+                    format!("{snapshots_path}/{name}")
                 } else {
-                    format!("{snapshots_path}/{name} {counter}.png")
+                    format!("{snapshots_path}/{name}({counter:03})")
                 };
                 *counter += 1;
 
                 let lines = vt.view();
                 let cursor: Option<(usize, usize)> = vt.cursor().into();
-                info!("rendering {}", filename);
-                renderer.render_png(&filename, lines, cursor)?;
+                info!("rendering {}.png and {}.txt", filename, filename);
+                renderer.render_png(&format!("{}.png", filename), lines, cursor)?;
+                std::fs::write(format!("{}.txt", filename), vt.dump())?;
             }
         }
     }
