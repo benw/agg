@@ -307,9 +307,13 @@ pub fn write_snapshots<I: BufRead>(input: I, snapshots_path: &str, config: Confi
 
                 let lines = vt.view();
                 let cursor: Option<(usize, usize)> = vt.cursor().into();
-                info!("rendering {}.png and {}.txt", filename, filename);
-                renderer.render_png(&format!("{}.png", filename), lines, cursor)?;
-                std::fs::write(format!("{}.txt", filename), vt.dump())?;
+                info!("rendering {}.svg, {}.png, {}.txt", filename, filename, filename);
+                use std::fs;
+                let svg = renderer.render_svg(lines, cursor);
+                let pixmap = renderer.render_pixmap(&svg);
+                fs::write(format!("{}.txt", filename), vt.dump())?;
+                fs::write(format!("{}.svg", filename), &svg)?;
+                pixmap.save_png(format!("{}.png", filename))?;
             }
         }
     }

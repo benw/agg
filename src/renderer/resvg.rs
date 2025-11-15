@@ -258,22 +258,15 @@ impl<'a> ResvgRenderer<'a> {
         svg.push_str("</text>");
     }
 
-    pub fn render_png(
-        &self,
-        filename: &str,
-        lines: &[avt::Line],
-        cursor: Option<(usize, usize)>,
-    ) -> anyhow::Result<()> {
-        let pixmap = self.render_pixmap(lines, cursor);
-        pixmap.save_png(filename)?;
-        Ok(())
-    }
-
-    fn render_pixmap(&self, lines: &[avt::Line], cursor: Option<(usize, usize)>) -> Pixmap {
+    pub fn render_svg(&self, lines: &[avt::Line], cursor: Option<(usize, usize)>) -> String {
         let mut svg = self.header.clone();
         self.push_lines(&mut svg, lines, cursor);
         svg.push_str(Self::footer());
-        let tree = usvg::Tree::from_str(&svg, &self.options).unwrap();
+        svg
+    }
+
+    pub fn render_pixmap(&self, svg: &str) -> Pixmap {
+        let tree = usvg::Tree::from_str(svg, &self.options).unwrap();
 
         let mut pixmap =
             tiny_skia::Pixmap::new(self.pixel_width as u32, self.pixel_height as u32).unwrap();
@@ -285,7 +278,8 @@ impl<'a> ResvgRenderer<'a> {
 
 impl<'a> Renderer for ResvgRenderer<'a> {
     fn render(&mut self, lines: &[avt::Line], cursor: Option<(usize, usize)>) -> ImgVec<RGBA8> {
-        let pixmap = self.render_pixmap(lines, cursor);
+        let svg = self.render_svg(lines, cursor);
+        let pixmap = self.render_pixmap(&svg);
         let buf = pixmap.take().as_rgba().to_vec();
 
         ImgVec::new(buf, self.pixel_width, self.pixel_height)
