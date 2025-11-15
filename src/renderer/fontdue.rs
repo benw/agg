@@ -18,6 +18,8 @@ pub struct FontdueRenderer {
     font_size: usize,
     col_width: f64,
     row_height: f64,
+    margin_l: f64,
+    margin_t: usize,
     font_db: fontdb::Database,
     glyph_cache: HashMap<CharVariant, Option<Glyph>>,
     font_cache: HashMap<FontFace, Option<fontdue::Font>>,
@@ -79,6 +81,8 @@ impl FontdueRenderer {
         } else {
             settings.theme.background.alpha(0)
         };
+        let margin_l = col_width as f64 * settings.margin_cols;
+        let margin_t = (row_height as f64 * settings.margin_rows).round() as usize;
 
         Self {
             font_db: settings.font_db,
@@ -87,13 +91,15 @@ impl FontdueRenderer {
             background_color,
             pixel_width: settings
                 .pixel_width
-                .unwrap_or(((cols + 2) as f64 * col_width).round() as usize),
+                .unwrap_or(((cols as f64 + 2.0 * settings.margin_cols) * col_width).round() as usize),
             pixel_height: settings
                 .pixel_height
-                .unwrap_or(((rows + 1) as f64 * row_height).round() as usize),
+                .unwrap_or(((rows as f64 + 2.0 * settings.margin_rows) * row_height).round() as usize),
             font_size: settings.font_size,
             col_width,
             row_height,
+            margin_l,
+            margin_t,
             font_cache: HashMap::new(),
             glyph_cache: HashMap::new(),
         }
@@ -182,8 +188,8 @@ impl Renderer for FontdueRenderer {
         let mut buf: Vec<RGBA8> =
             vec![self.background_color; self.pixel_width * self.pixel_height];
 
-        let margin_l = self.col_width;
-        let margin_t = (self.row_height / 2.0).round() as usize;
+        let margin_l = self.margin_l;
+        let margin_t = self.margin_t;
 
         for (row, line) in lines.iter().enumerate() {
             let y_t = margin_t + (row as f64 * self.row_height).round() as usize;

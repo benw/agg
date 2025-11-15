@@ -45,6 +45,8 @@ pub struct Config {
     pub theme: Option<Theme>,
     pub show_progress_bar: bool,
     pub fill_background: bool,
+    pub margin_cols: f64,
+    pub margin_rows: f64,
 }
 
 impl Default for Config {
@@ -67,6 +69,8 @@ impl Default for Config {
             theme: Default::default(),
             show_progress_bar: true,
             fill_background: true,
+            margin_cols: 1.0,
+            margin_rows: 0.5,
         }
     }
 }
@@ -186,6 +190,8 @@ fn renderer_settings(header: &Header, config: &Config) -> Result<renderer::Setti
         pixel_width: config.width,
         pixel_height: config.height,
         fill_background: config.fill_background,
+        margin_cols: config.margin_cols,
+        margin_rows: config.margin_rows,
     };
     Ok(settings)
 }

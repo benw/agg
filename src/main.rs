@@ -128,6 +128,14 @@ struct Cli {
     /// Disable filling images with the background color
     #[clap(long)]
     transparent_background: bool,
+
+    /// Width of left and right margins (in columns)
+    #[clap(long, default_value_t = 1.0)]
+    margin_cols: f64,
+
+    /// Height of top and bottom margins (in rows)
+    #[clap(long, default_value_t = 0.5)]
+    margin_rows: f64,
 }
 
 fn download(url: &str) -> Result<impl io::Read> {
@@ -206,6 +214,8 @@ fn main() -> Result<()> {
         theme: cli.theme.map(|theme| theme.0),
         show_progress_bar: !cli.quiet,
         fill_background: !cli.transparent_background,
+        margin_cols: cli.margin_cols,
+        margin_rows: cli.margin_rows,
     };
 
     let input = BufReader::new(reader(&cli.input_filename_or_url)?);

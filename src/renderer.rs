@@ -21,6 +21,8 @@ pub struct Settings {
     pub pixel_width: Option<usize>,
     pub pixel_height: Option<usize>,
     pub fill_background: bool,
+    pub margin_cols: f64,
+    pub margin_rows: f64,
 }
 
 pub fn resvg<'a>(settings: Settings) -> resvg::ResvgRenderer<'a> {
