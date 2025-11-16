@@ -1,6 +1,8 @@
 mod fontdue;
 mod resvg;
 
+use std::sync::Arc;
+
 use imgref::ImgVec;
 use rgb::{RGB8, RGBA8};
 
@@ -13,7 +15,7 @@ pub trait Renderer {
 
 pub struct Settings {
     pub terminal_size: (usize, usize),
-    pub font_db: fontdb::Database,
+    pub font_db: Arc<fontdb::Database>,
     pub font_families: Vec<String>,
     pub font_size: usize,
     pub line_height: f64,

@@ -2,18 +2,15 @@ use super::{color_to_rgb, text_attrs, Renderer, Settings, TextAttrs};
 use crate::theme::Theme;
 use imgref::ImgVec;
 use rgb::{FromSlice, RGBA8};
-use std::{fmt::Write, sync::Arc};
+use std::fmt::Write;
 use tiny_skia::Pixmap;
 
 pub struct ResvgRenderer<'a> {
-    theme: Theme,
-    pixel_width: usize,
-    pixel_height: usize,
+    settings: Settings,
     char_width: f64,
     row_height: f64,
     options: usvg::Options<'a>,
     transform: tiny_skia::Transform,
-    header: String,
 }
 
 fn color_to_style(color: &avt::Color, theme: &Theme) -> String {
@@ -61,81 +58,53 @@ impl<'a> ResvgRenderer<'a> {
         let char_width = font_size * 0.6; // HACK
 
         let options = usvg::Options {
-            fontdb: Arc::new(settings.font_db),
+            fontdb: settings.font_db.clone(),
             ..Default::default()
         };
 
         let transform = tiny_skia::Transform::default();
 
-        let header = Self::header(
-            settings.terminal_size,
-            settings.font_families.join(","),
-            font_size,
-            char_width,
-            row_height,
-            &settings.theme,
-            settings.fill_background,
-        );
-
-        let pixel_width = settings.pixel_width;
-        let pixel_height = settings.pixel_height;
-
         Self {
-            theme: settings.theme,
-            pixel_width,
-            pixel_height,
+            settings,
             char_width,
             row_height,
             options,
             transform,
-            header,
         }
     }
 
-    fn header(
-        (cols, rows): (usize, usize),
-        font_family: String,
-        font_size: f64,
-        char_width: f64,
-        row_height: f64,
-        theme: &Theme,
-        fill_background: bool,
-    ) -> String {
-        let width = (cols + 2) as f64 * char_width;
-        let height = (rows + 1) as f64 * row_height;
-        let x = char_width;
-        let y = 0.5 * row_height;
-
-        let mut header = format!(
-            r#"<?xml version="1.0"?>
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="{}" height="{}" font-size="{}px" font-family="{}">
+    fn push_header(&self, svg: &mut String) {
+        writeln!(svg,
+            r#"<svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="{}" height="{}">
 <style>
+svg {{
+    font-size: {}px;
+    font-family: "{}";
+    fill: {};
+}}
 .br {{ font-weight: bold }}
 .it {{ font-style: italic }}
 .un {{ text-decoration: underline }}
 </style>
 "#,
-            width, height, font_size, font_family
-        );
-        if fill_background {
+            self.settings.pixel_width,
+            self.settings.pixel_height,
+            self.settings.font_size,
+            self.settings.font_families.join(","),
+            self.settings.theme.foreground,
+        ).unwrap();
+        if self.settings.fill_background {
             writeln!(
-                &mut header,
+                svg,
                 r#"<rect width="100%" height="100%" rx="{}" ry="{}" style="fill: {}" />"#,
-                4, 4, theme.background
+                0, 0, self.settings.theme.background
             )
             .unwrap();
         }
-        writeln!(
-            &mut header,
-            r#"<svg x="{:.3}" y="{:.3}" style="fill: {}">"#,
-            x, y, theme.foreground
-        )
-        .unwrap();
-        header
     }
 
     fn footer() -> &'static str {
-        "</svg></svg>"
+        "</svg>"
     }
 
     fn push_lines(&self, svg: &mut String, lines: &[avt::Line], cursor: Option<(usize, usize)>) {
@@ -156,7 +125,7 @@ impl<'a> ResvgRenderer<'a> {
             let mut col = 0;
 
             for cell in line.cells() {
-                let attrs = text_attrs(cell.pen(), &cursor, col, row, &self.theme);
+                let attrs = text_attrs(cell.pen(), &cursor, col, row, &self.settings.theme);
 
                 if attrs.background.is_none() {
                     col += cell.width();
@@ -164,7 +133,7 @@ impl<'a> ResvgRenderer<'a> {
                 }
 
                 let x = (col as f64) * self.char_width;
-                let style = rect_style(&attrs, &self.theme);
+                let style = rect_style(&attrs, &self.settings.theme);
                 let width = self.char_width * cell.width() as f64;
 
                 let _ = writeln!(
@@ -198,7 +167,7 @@ impl<'a> ResvgRenderer<'a> {
                     continue;
                 }
 
-                let attrs = text_attrs(cell.pen(), &cursor, col, row, &self.theme);
+                let attrs = text_attrs(cell.pen(), &cursor, col, row, &self.settings.theme);
 
                 svg.push_str("<tspan ");
 
@@ -209,7 +178,7 @@ impl<'a> ResvgRenderer<'a> {
 
                 let x = col as f64 * self.char_width;
                 let class = text_class(&attrs);
-                let style = text_style(&attrs, &self.theme);
+                let style = text_style(&attrs, &self.settings.theme);
 
                 let _ = write!(svg, r#"x="{x:.3}" class="{class}" style="{style}">"#);
 
@@ -250,7 +219,8 @@ impl<'a> ResvgRenderer<'a> {
     }
 
     pub fn render_svg(&self, lines: &[avt::Line], cursor: Option<(usize, usize)>) -> String {
-        let mut svg = self.header.clone();
+        let mut svg = String::new();
+        self.push_header(&mut svg);
         self.push_lines(&mut svg, lines, cursor);
         svg.push_str(Self::footer());
         svg
@@ -260,7 +230,7 @@ impl<'a> ResvgRenderer<'a> {
         let tree = usvg::Tree::from_str(svg, &self.options).unwrap();
 
         let mut pixmap =
-            tiny_skia::Pixmap::new(self.pixel_width as u32, self.pixel_height as u32).unwrap();
+            tiny_skia::Pixmap::new(self.settings.pixel_width as u32, self.settings.pixel_height as u32).unwrap();
 
         resvg::render(&tree, self.transform, &mut pixmap.as_mut());
         pixmap
@@ -273,10 +243,10 @@ impl<'a> Renderer for ResvgRenderer<'a> {
         let pixmap = self.render_pixmap(&svg);
         let buf = pixmap.take().as_rgba().to_vec();
 
-        ImgVec::new(buf, self.pixel_width, self.pixel_height)
+        ImgVec::new(buf, self.settings.pixel_width, self.settings.pixel_height)
     }
 
     fn pixel_size(&self) -> (usize, usize) {
-        (self.pixel_width, self.pixel_height)
+        (self.settings.pixel_width, self.settings.pixel_height)
     }
 }

@@ -5,6 +5,7 @@ mod renderer;
 mod theme;
 mod vt;
 
+use std::sync::Arc;
 use std::collections::HashMap;
 use std::fmt::{Debug, Display};
 use std::io::{BufRead, Write};
@@ -187,7 +188,7 @@ fn renderer_settings(header: &Header, config: &Config) -> Result<renderer::Setti
 
     let settings = renderer::Settings {
         terminal_size,
-        font_db,
+        font_db: Arc::new(font_db),
         font_families,
         font_size: config.font_size,
         line_height: config.line_height,

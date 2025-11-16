@@ -4,6 +4,7 @@ use imgref::ImgVec;
 use log::debug;
 use rgb::RGBA8;
 use std::collections::HashMap;
+use std::sync::Arc;
 
 type CharVariant = (char, bool, bool);
 type FontFace = (String, bool, bool);
@@ -20,7 +21,7 @@ pub struct FontdueRenderer {
     row_height: f64,
     margin_l: f64,
     margin_t: usize,
-    font_db: fontdb::Database,
+    font_db: Arc<fontdb::Database>,
     glyph_cache: HashMap<CharVariant, Option<Glyph>>,
     font_cache: HashMap<FontFace, Option<fontdue::Font>>,
 }
