@@ -77,13 +77,8 @@ impl<'a> ResvgRenderer<'a> {
             settings.fill_background,
         );
 
-        let mut svg = header.clone();
-        svg.push_str(Self::footer());
-        let tree = usvg::Tree::from_str(&svg, &options).unwrap();
-        let pixel_width = settings.pixel_width.unwrap_or(tree.size().width() as usize);
-        let pixel_height = settings
-            .pixel_height
-            .unwrap_or(tree.size().height() as usize);
+        let pixel_width = settings.pixel_width;
+        let pixel_height = settings.pixel_height;
 
         Self {
             theme: settings.theme,

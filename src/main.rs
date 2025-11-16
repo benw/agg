@@ -117,24 +117,24 @@ struct Cli {
     #[clap(short, long)]
     quiet: bool,
 
-    /// Override output image width (in pixels)
-    #[clap(long)]
-    width: Option<usize>,
+    /// Output image width (in pixels)
+    #[clap(long, default_value_t = agg::DEFAULT_WIDTH)]
+    width: usize,
 
-    /// Override output image height (in pixels)
-    #[clap(long)]
-    height: Option<usize>,
+    /// Output image height (in pixels)
+    #[clap(long, default_value_t = agg::DEFAULT_HEIGHT)]
+    height: usize,
 
     /// Disable filling images with the background color
     #[clap(long)]
     transparent_background: bool,
 
     /// Width of left and right margins (in columns)
-    #[clap(long, default_value_t = 1.0)]
+    #[clap(long, default_value_t = 0.0)]
     margin_cols: f64,
 
     /// Height of top and bottom margins (in rows)
-    #[clap(long, default_value_t = 0.5)]
+    #[clap(long, default_value_t = 0.0)]
     margin_rows: f64,
 }
 

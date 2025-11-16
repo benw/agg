@@ -17,19 +17,22 @@ use log::info;
 use crate::asciicast::{Asciicast, Event, Header};
 use crate::renderer::Renderer as _;
 
-pub const DEFAULT_FONT_FAMILY: &str =
-    "JetBrains Mono,Fira Code,SF Mono,Menlo,Consolas,DejaVu Sans Mono,Liberation Mono";
-pub const DEFAULT_FONT_SIZE: usize = 16;
+pub const DEFAULT_WIDTH: usize = 3840;
+pub const DEFAULT_HEIGHT: usize = 2160;
+pub const DEFAULT_MARGIN_COLS: f64 = 0.0;
+pub const DEFAULT_MARGIN_ROWS: f64 = 0.0;
+pub const DEFAULT_FONT_FAMILY: &str = "Source Code Pro";
+pub const DEFAULT_FONT_SIZE: usize = 144;
 pub const DEFAULT_FPS_CAP: u8 = 30;
 pub const DEFAULT_LAST_FRAME_DURATION: f64 = 3.0;
-pub const DEFAULT_LINE_HEIGHT: f64 = 1.4;
+pub const DEFAULT_LINE_HEIGHT: f64 = 1.25;
 pub const DEFAULT_NO_LOOP: bool = false;
 pub const DEFAULT_SPEED: f64 = 1.0;
-pub const DEFAULT_IDLE_TIME_LIMIT: f64 = 5.0;
+pub const DEFAULT_IDLE_TIME_LIMIT: f64 = 99999999999.0;
 
 pub struct Config {
-    pub width: Option<usize>,
-    pub height: Option<usize>,
+    pub width: usize,
+    pub height: usize,
     pub cols: Option<usize>,
     pub font_dirs: Vec<String>,
     pub font_family: String,
@@ -52,8 +55,8 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            width: None,
-            height: None,
+            width: DEFAULT_WIDTH,
+            height: DEFAULT_HEIGHT,
             cols: None,
             font_dirs: vec![],
             font_family: String::from(DEFAULT_FONT_FAMILY),
@@ -69,8 +72,8 @@ impl Default for Config {
             theme: Default::default(),
             show_progress_bar: true,
             fill_background: true,
-            margin_cols: 1.0,
-            margin_rows: 0.5,
+            margin_cols: DEFAULT_MARGIN_COLS,
+            margin_rows: DEFAULT_MARGIN_ROWS,
         }
     }
 }
@@ -85,17 +88,18 @@ pub enum Renderer {
 #[derive(Clone, Debug, ArgEnum, Default)]
 pub enum OutputMode {
     /// Write a single animated GIF of the entire input
-    #[default]
     AnimatedGif,
 
     /// Write a snapshot PNG of each marker in the input
+    #[default]
     SnapshotMarkers,
 }
 
 #[derive(Clone, Debug, ArgEnum, Default)]
 pub enum Theme {
-    Asciinema,
     #[default]
+    RustCurious,
+    Asciinema,
     Dracula,
     GithubDark,
     GithubLight,
@@ -121,6 +125,7 @@ impl TryFrom<Theme> for theme::Theme {
         use Theme::*;
 
         match theme {
+            RustCurious => "000000,cccccc,000000,dd3c69,4ebf22,ddaf3c,26b0d7,b954e1,54e1b9,d9d9d9,4d4d4d,dd3c69,4ebf22,ddaf3c,26b0d7,b954e1,54e1b9,ffffff".parse(),
             Asciinema => "121314,cccccc,000000,dd3c69,4ebf22,ddaf3c,26b0d7,b954e1,54e1b9,d9d9d9,4d4d4d,dd3c69,4ebf22,ddaf3c,26b0d7,b954e1,54e1b9,ffffff".parse(),
             Dracula => "282a36,f8f8f2,21222c,ff5555,50fa7b,f1fa8c,bd93f9,ff79c6,8be9fd,f8f8f2,6272a4,ff6e6e,69ff94,ffffa5,d6acff,ff92df,a4ffff,ffffff".parse(),
             GithubDark => "171b21,eceff4,0e1116,f97583,a2fca2,fabb72,7db4f9,c4a0f5,1f6feb,eceff4,6a737d,bf5a64,7abf7a,bf8f57,608bbf,997dbf,195cbf,b9bbbf".parse(),

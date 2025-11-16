@@ -73,7 +73,6 @@ impl FontdueRenderer {
         .unwrap();
 
         let metrics = default_font.metrics('/', settings.font_size as f32);
-        let (cols, rows) = settings.terminal_size;
         let col_width = metrics.advance_width as f64;
         let row_height = (settings.font_size as f64) * settings.line_height;
         let background_color = if settings.fill_background {
@@ -89,12 +88,8 @@ impl FontdueRenderer {
             font_families: settings.font_families,
             theme: settings.theme,
             background_color,
-            pixel_width: settings
-                .pixel_width
-                .unwrap_or(((cols as f64 + 2.0 * settings.margin_cols) * col_width).round() as usize),
-            pixel_height: settings
-                .pixel_height
-                .unwrap_or(((rows as f64 + 2.0 * settings.margin_rows) * row_height).round() as usize),
+            pixel_width: settings.pixel_width,
+            pixel_height: settings.pixel_height,
             font_size: settings.font_size,
             col_width,
             row_height,
