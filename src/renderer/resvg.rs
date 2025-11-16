@@ -79,7 +79,7 @@ impl<'a> ResvgRenderer<'a> {
 <style>
 svg {{
     font-size: {}px;
-    font-family: "{}";
+    font-family: {};
     fill: {};
 }}
 .br {{ font-weight: bold }}
