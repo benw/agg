@@ -1,3 +1,5 @@
+use log::warn;
+
 pub fn init(font_dirs: &[String], font_family: &str) -> Option<(fontdb::Database, Vec<String>)> {
     let mut font_db = fontdb::Database::new();
     font_db.load_system_fonts();
@@ -9,7 +11,15 @@ pub fn init(font_dirs: &[String], font_family: &str) -> Option<(fontdb::Database
     let mut families = font_family
         .split(',')
         .map(str::trim)
-        .filter_map(|name| find_font_family(&font_db, name))
+        .filter_map(|name| {
+            match find_font_family(&font_db, name) {
+                Some(font) => Some(font),
+                None => {
+                    warn!("Font not found: {name}");
+                    None
+                }
+            }
+        })
         .collect::<Vec<_>>();
 
     if families.is_empty() {
