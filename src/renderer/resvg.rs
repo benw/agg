@@ -6,7 +6,6 @@ use std::{fmt::Write, sync::Arc};
 use tiny_skia::Pixmap;
 
 pub struct ResvgRenderer<'a> {
-    terminal_size: (usize, usize),
     theme: Theme,
     pixel_width: usize,
     pixel_height: usize,
@@ -57,9 +56,9 @@ fn rect_style(attrs: &TextAttrs, theme: &Theme) -> String {
 
 impl<'a> ResvgRenderer<'a> {
     pub fn new(settings: Settings) -> Self {
-        let char_width = 100.0 / (settings.terminal_size.0 as f64 + 2.0);
         let font_size = settings.font_size as f64;
         let row_height = font_size * settings.line_height;
+        let char_width = font_size * 0.6; // HACK
 
         let options = usvg::Options {
             fontdb: Arc::new(settings.font_db),
@@ -72,6 +71,7 @@ impl<'a> ResvgRenderer<'a> {
             settings.terminal_size,
             settings.font_families.join(","),
             font_size,
+            char_width,
             row_height,
             &settings.theme,
             settings.fill_background,
@@ -86,7 +86,6 @@ impl<'a> ResvgRenderer<'a> {
             .unwrap_or(tree.size().height() as usize);
 
         Self {
-            terminal_size: settings.terminal_size,
             theme: settings.theme,
             pixel_width,
             pixel_height,
@@ -102,14 +101,15 @@ impl<'a> ResvgRenderer<'a> {
         (cols, rows): (usize, usize),
         font_family: String,
         font_size: f64,
+        char_width: f64,
         row_height: f64,
         theme: &Theme,
         fill_background: bool,
     ) -> String {
-        let width = (cols + 2) as f64 * (font_size * 0.6);
+        let width = (cols + 2) as f64 * char_width;
         let height = (rows + 1) as f64 * row_height;
-        let x = 1.0 * 100.0 / (cols as f64 + 2.0);
-        let y = 0.5 * 100.0 / (rows as f64 + 1.0);
+        let x = char_width;
+        let y = 0.5 * row_height;
 
         let mut header = format!(
             r#"<?xml version="1.0"?>
@@ -132,7 +132,7 @@ impl<'a> ResvgRenderer<'a> {
         }
         writeln!(
             &mut header,
-            r#"<svg x="{:.3}%" y="{:.3}%" style="fill: {}">"#,
+            r#"<svg x="{:.3}" y="{:.3}" style="fill: {}">"#,
             x, y, theme.foreground
         )
         .unwrap();
@@ -154,12 +154,10 @@ impl<'a> ResvgRenderer<'a> {
         lines: &[avt::Line],
         cursor: Option<(usize, usize)>,
     ) {
-        let (cols, rows) = self.terminal_size;
-
-        svg.push_str(r#"<g style="shape-rendering: optimizeSpeed">"#);
+        let _ = writeln!(svg, r#"<g style="shape-rendering: optimizeSpeed">"#);
 
         for (row, line) in lines.iter().enumerate() {
-            let y = 100.0 * (row as f64) / (rows as f64 + 1.0);
+            let y = (row as f64) * self.row_height;
             let mut col = 0;
 
             for cell in line.cells() {
@@ -170,13 +168,13 @@ impl<'a> ResvgRenderer<'a> {
                     continue;
                 }
 
-                let x = 100.0 * (col as f64) / (cols as f64 + 2.0);
+                let x = (col as f64) * self.char_width;
                 let style = rect_style(&attrs, &self.theme);
                 let width = self.char_width * cell.width() as f64;
 
-                let _ = write!(
+                let _ = writeln!(
                     svg,
-                    r#"<rect x="{:.3}%" y="{:.3}%" width="{:.3}%" height="{:.3}" style="{}" />"#,
+                    r#"<rect x="{:.3}" y="{:.3}" width="{:.3}" height="{:.3}" style="{}" />"#,
                     x, y, width, self.row_height, style
                 );
 
@@ -184,19 +182,17 @@ impl<'a> ResvgRenderer<'a> {
             }
         }
 
-        svg.push_str("</g>");
+        let _ = writeln!(svg, "</g>");
     }
 
     fn push_text(&self, svg: &mut String, lines: &[avt::Line], cursor: Option<(usize, usize)>) {
-        let (cols, rows) = self.terminal_size;
-
-        svg.push_str(r#"<text class="default-text-fill">"#);
+        let _ = writeln!(svg, r#"<text class="default-text-fill">"#);
 
         for (row, line) in lines.iter().enumerate() {
-            let y = 100.0 * (row as f64) / (rows as f64 + 1.0);
+            let y = (row as f64) * self.row_height;
             let mut did_dy = false;
 
-            let _ = write!(svg, r#"<tspan y="{y:.3}%">"#);
+            let _ = write!(svg, r#"<tspan y="{y:.3}">"#);
             let mut col = 0;
 
             for cell in line.cells() {
@@ -216,11 +212,11 @@ impl<'a> ResvgRenderer<'a> {
                     did_dy = true;
                 }
 
-                let x = 100.0 * (col as f64) / (cols as f64 + 2.0);
+                let x = col as f64 * self.char_width;
                 let class = text_class(&attrs);
                 let style = text_style(&attrs, &self.theme);
 
-                let _ = write!(svg, r#"x="{x:.3}%" class="{class}" style="{style}">"#);
+                let _ = write!(svg, r#"x="{x:.3}" class="{class}" style="{style}">"#);
 
                 match ch {
                     '\'' => {
@@ -248,14 +244,14 @@ impl<'a> ResvgRenderer<'a> {
                     }
                 }
 
-                svg.push_str("</tspan>");
+                let _ = writeln!(svg, "</tspan>");
                 col += cell.width();
             }
 
-            svg.push_str("</tspan>");
+            let _ = writeln!(svg, "</tspan>");
         }
 
-        svg.push_str("</text>");
+        let _ = writeln!(svg, "</text>");
     }
 
     pub fn render_svg(&self, lines: &[avt::Line], cursor: Option<(usize, usize)>) -> String {
