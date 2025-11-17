@@ -176,6 +176,15 @@ svg {{
                     did_dy = true;
                 }
 
+                // Hack for emojis under overlay
+                if cell.width() > 1 {
+                    if let Some(avt::Color::RGB(rgb::RGB8 { r, g, b })) = attrs.foreground {
+                        if r < 50 && g < 50 && b < 50 {
+                            write!(svg, r#"opacity="0.2" "#).unwrap();
+                        }
+                    }
+                }
+
                 let x = col as f64 * self.char_width;
                 let class = text_class(&attrs);
                 let style = text_style(&attrs, &self.settings.theme);
