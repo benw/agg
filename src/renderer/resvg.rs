@@ -9,6 +9,8 @@ pub struct ResvgRenderer<'a> {
     settings: Settings,
     char_width: f64,
     row_height: f64,
+    margin_l: f64,
+    margin_t: f64,
     options: usvg::Options<'a>,
     transform: tiny_skia::Transform,
 }
@@ -56,6 +58,8 @@ impl<'a> ResvgRenderer<'a> {
         let font_size = settings.font_size as f64;
         let row_height = font_size * settings.line_height;
         let char_width = font_size * 0.6; // HACK
+        let margin_l = char_width as f64 * settings.margin_cols;
+        let margin_t = row_height as f64 * settings.margin_rows;
 
         let options = usvg::Options {
             fontdb: settings.font_db.clone(),
@@ -68,6 +72,8 @@ impl<'a> ResvgRenderer<'a> {
             settings,
             char_width,
             row_height,
+            margin_l,
+            margin_t,
             options,
             transform,
         }
@@ -121,7 +127,7 @@ svg {{
         let _ = writeln!(svg, r#"<g style="shape-rendering: optimizeSpeed">"#);
 
         for (row, line) in lines.iter().enumerate() {
-            let y = (row as f64) * self.row_height;
+            let y = self.margin_t + (row as f64) * self.row_height;
             let mut col = 0;
 
             for cell in line.cells() {
@@ -132,7 +138,7 @@ svg {{
                     continue;
                 }
 
-                let x = (col as f64) * self.char_width;
+                let x = self.margin_l + (col as f64) * self.char_width;
                 let style = rect_style(&attrs, &self.settings.theme);
                 let width = self.char_width * cell.width() as f64;
 
@@ -153,7 +159,7 @@ svg {{
         let _ = writeln!(svg, r#"<text class="default-text-fill">"#);
 
         for (row, line) in lines.iter().enumerate() {
-            let y = (row as f64) * self.row_height;
+            let y = self.margin_t + (row as f64) * self.row_height;
             let mut did_dy = false;
 
             let _ = write!(svg, r#"<tspan y="{y:.3}">"#);
@@ -186,7 +192,7 @@ svg {{
                     write!(svg, r#"font-family="Apple Color Emoji" "#).unwrap();
                 }
 
-                let x = col as f64 * self.char_width;
+                let x = self.margin_l + (col as f64) * self.char_width;
                 let class = text_class(&attrs);
                 let style = text_style(&attrs, &self.settings.theme);
 
