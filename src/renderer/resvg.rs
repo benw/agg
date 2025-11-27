@@ -183,6 +183,7 @@ svg {{
                             write!(svg, r#"opacity="0.2" "#).unwrap();
                         }
                     }
+                    write!(svg, r#"font-family="Apple Color Emoji" "#).unwrap();
                 }
 
                 let x = col as f64 * self.char_width;

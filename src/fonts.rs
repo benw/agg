@@ -1,4 +1,4 @@
-use log::warn;
+use log::{info, warn};
 
 pub fn init(font_dirs: &[String], font_family: &str) -> Option<(fontdb::Database, Vec<String>)> {
     let mut font_db = fontdb::Database::new();
@@ -13,7 +13,10 @@ pub fn init(font_dirs: &[String], font_family: &str) -> Option<(fontdb::Database
         .map(str::trim)
         .filter_map(|name| {
             match find_font_family(&font_db, name) {
-                Some(font) => Some(font),
+                Some(font) => {
+                    info!("Found font: {name}");
+                    Some(font)
+                }
                 None => {
                     warn!("Font not found: {name}");
                     None
@@ -29,6 +32,14 @@ pub fn init(font_dirs: &[String], font_family: &str) -> Option<(fontdb::Database
             if let Some(name) = find_font_family(&font_db, name) {
                 if !families.contains(&name) {
                     families.push(name);
+                }
+            }
+        }
+
+        for face in font_db.faces() {
+            for family in &face.families {
+                if family.0 == "Apple Color Emoji" || family.0 == "Source Code Pro" || family.0 == ".LastResort." {
+                    println!("{}", family.0);
                 }
             }
         }
